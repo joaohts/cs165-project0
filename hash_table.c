@@ -31,12 +31,16 @@ int allocate(hashtable** ht, int size) {
         printf("Hashtable malloc failed.\n");
         return -1;
     }
-    (*ht)->array = malloc(ARRAY_MULTIPLIER * size * sizeof(node*));
+    (*ht)->array = malloc(ARRAY_MULTIPLIER * size * sizeof(node));
     if ((*ht)->array == NULL){
         printf("Array malloc failed.\n");
         return -1;
     }
-
+    (*ht)->bookkeeping = calloc(ARRAY_MULTIPLIER * size, sizeof(int));
+    if ((*ht)->bookkeeping == NULL){
+        printf("Array malloc failed.\n");
+        return -1;
+    }
     (*ht)->size = size * ARRAY_MULTIPLIER;
 
 
@@ -49,18 +53,28 @@ int allocate(hashtable** ht, int size) {
 int put(hashtable* ht, keyType key, valType value) {
     uint32_t hashed_key = hash(key, ht->size);
 
-    node* new_node = malloc(sizeof(node));
-
-    if (new_node == NULL){
-        printf("Node malloc failed.\n");
-        return -1;
+    if (ht->bookkeeping[hashed_key] == 0) {
+        ht->array->key = key;
+        ht->array->value = value;
+        ht->array->next = NULL;
+        ht->bookkeeping[hashed_key] == 1;
     }
+    else {
+        node* new_node = malloc(sizeof(node));
+        if (new_node == NULL){
+            printf("Node malloc failed.\n");
+            return -1;
+        }
 
-    new_node->key = key;
-    new_node->value = value;
-    new_node->next = ht->array[hashed_key];
+        new_node->key = ht->array->key;
+        new_node->value = ht->array->value;
+        new_node->next = ht->array->next;
 
-    ht->array[hashed_key] = new_node;
+        ht->array->key = key;
+        ht->array->value = value;
+        ht->array->next = new_node;
+        ht->bookkeeping[hashed_key]++;
+    }
     return 0;
 }
 
@@ -81,18 +95,28 @@ int get(hashtable* ht, keyType key, valType *values, int num_values, int* num_re
     uint32_t hashed_key = hash(key, ht->size);
 
     int key_matches = 0;
-    node* current_node = ht->array[hashed_key];
-
     
-    while (current_node != NULL) {
-        if (key == current_node->key) {
+    if (ht->bookkeeping[hashed_key] >= 1) {
+        node current_node = ht->array[hashed_key];
+        if (key == current_node.key) {
             if (key_matches < num_values){
-                values[key_matches] = current_node->value;
+                values[key_matches] = current_node.key;
             }
             key_matches++;
         }
-        current_node = current_node->next; 
-    }
+
+            
+        while (current_node.next != NULL){
+            current_node = *(current_node.next);
+            if (key == current_node.key) {
+                if (key_matches < num_values){
+                    values[key_matches] = current_node.key;
+                }
+                key_matches++;
+            }
+        }
+    } 
+
     *num_results = key_matches;
 
     return 0;
@@ -107,6 +131,17 @@ int erase(hashtable* ht, keyType key) {
     }
 
     uint32_t hashed_key = hash(key, ht->size);
+
+    if (ht->bookkeeping[hashed_key >= 1]){
+        node current_node = ht->array[hashed_key];
+        if (current_node.key == key) {
+            *origin = next_node;
+            free(current_node);
+        }
+    }
+
+
+
     node** origin = &(ht->array[hashed_key]);
     node* current_node = ht->array[hashed_key];
     node* next_node;
