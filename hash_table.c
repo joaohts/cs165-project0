@@ -3,7 +3,7 @@
 
 #include "hash_table.h"
 
-int ARRAY_MULTIPLIER = 1;
+int ARRAY_MULTIPLIER = 10;
 
 
 // Robert Jenkins' 32 bit integer hash function (adapted)
