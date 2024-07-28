@@ -143,5 +143,7 @@ int deallocate(hashtable* ht) {
             current_node = next_node;
         }
     }
+    free(ht->array);
+    free(ht);
     return 0;
 }
