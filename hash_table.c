@@ -132,12 +132,31 @@ int erase(hashtable* ht, keyType key) {
 
     uint32_t hashed_key = hash(key, ht->size);
 
-    if (ht->bookkeeping[hashed_key >= 1]){
+    if (ht->bookkeeping[hashed_key] == 1){
         node current_node = ht->array[hashed_key];
         if (current_node.key == key) {
-            *origin = next_node;
-            free(current_node);
+            ht->bookkeeping[hashed_key]--;
         }
+    } else if (ht->bookkeeping[hashed_key] > 1){
+        node current_node = ht->array[hashed_key];
+        if (current_node.key == key) {
+            ht->array[hashed_key].key = (*current_node.next).key;
+            ht->array[hashed_key].value = (*current_node.next).value;
+            ht->array[hashed_key].next = (*current_node.next).next;
+            free(current_node.next);
+            current_node = ht->array[hashed_key];
+            ht->bookkeeping[hashed_key]--;
+        }
+        while(current_node.next != NULL) {
+            current_node = *current_node.next;
+            if (current_node.key == key) {
+                *origin = next_node;
+                free(current_node);
+            }
+        }
+            
+    
+
     }
 
 
