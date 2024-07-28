@@ -23,7 +23,7 @@ int main(void) {
   srand(seed);
   printf("Performing stress test. Inserting 50 million keys.\n");
 
-  struct timeval stop, start;
+  struct timeval stop, start, finish;
   gettimeofday(&start, NULL);
 
   for (int i = 0; i < num_tests; i += 1) {
@@ -36,7 +36,11 @@ int main(void) {
   double secs = (double)(stop.tv_usec - start.tv_usec) / 1000000 + (double)(stop.tv_sec - start.tv_sec); 
   printf("50 million insertions took %f seconds\n", secs);
 
+  
   assert(deallocate(ht)==0);
+  gettimeofday(&finish, NULL);
+  secs = (double)(finish.tv_usec - stop.tv_usec) / 1000000 + (double)(finish.tv_sec - stop.tv_sec);
+  printf("deallocating took %f seconds\n", secs);
 
   return 0;
 }

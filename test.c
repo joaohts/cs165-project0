@@ -27,15 +27,18 @@ int main(void) {
     keys[i] = rand();
     values[i] = rand();
     assert(put(ht, keys[i], values[i]) == 0);
-    printf("\t(%d -> %d) \n", keys[i], values[i]);
+    printf("\t %d (%d -> %d) \n",i, keys[i], values[i]);
   }
+
+  
 
   int num_values = 1;
   int results[num_values];
   int num_results;
-
+  
   for (int i = 0; i < num_tests; i += 1) {
     int index = rand() % num_tests;
+    
     keyType target_key = keys[index];
     num_results = 0;
     assert(get(ht, target_key, results, num_values, &num_results) == 0);
