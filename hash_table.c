@@ -3,7 +3,7 @@
 
 #include "hash_table.h"
 
-int ARRAY_MULTIPLIER = 1;
+int ARRAY_MULTIPLIER = 5;
 
 
 // Robert Jenkins' 32 bit integer hash function (adapted)
@@ -32,7 +32,7 @@ int allocate(hashtable** ht, int size) {
         printf("Hashtable malloc failed.\n");
         return -1;
     }
-    (*ht)->array = malloc(ARRAY_MULTIPLIER * size * sizeof(node));
+    (*ht)->array = calloc(ARRAY_MULTIPLIER * size, sizeof(node));
     if ((*ht)->array == NULL){
         printf("Array malloc failed.\n");
         return -1;
@@ -132,49 +132,50 @@ int erase(hashtable* ht, keyType key) {
     }
 
     uint32_t hashed_key = hash(key, ht->size);
+    node** origin = &(ht->array[hashed_key].next);
+    node* current_node = ht->array[hashed_key].next;
+    node* next_node;
 
-    if (ht->bookkeeping[hashed_key] == 1){
+    if (ht->bookkeeping[hashed_key] > 0 ){
         if (ht->array[hashed_key].key == key) {
-            ht->array[hashed_key].next = NULL;
             ht->bookkeeping[hashed_key]--;
-        }
-    } else if (ht->bookkeeping[hashed_key] > 1){
-        while (ht->array[hashed_key].key == key) {
-            if (ht->array[hashed_key].next != NULL) {
-                node* next_node = ht->array[hashed_key].next;
-                ht->array[hashed_key].key = (*next_node).key;
-                ht->array[hashed_key].value = (*next_node).value;
-                ht->array[hashed_key].next = (*next_node).next;
-                free(next_node);
+            while(current_node != NULL && current_node->key == key){
+                next_node = current_node->next;
+
+                free(current_node);
                 ht->bookkeeping[hashed_key]--;
+                current_node = next_node;
+            }
+            if (current_node != NULL){
+                ht->array[hashed_key].key = current_node->key;
+                ht->array[hashed_key].value = current_node->value;
+                ht->array[hashed_key].next = current_node->next;
             }
             else {
                 ht->array[hashed_key].next = NULL;
-                ht->bookkeeping[hashed_key] = 0;
             }
+            
         }
-        if (ht->bookkeeping[hashed_key] > 1) {
-
-            node current_node = ht->array[hashed_key];
-            node** origin = &(ht->array[hashed_key].next);
-            node* next_node = current_node.next;
-            while(next_node != NULL) {
-                current_node = *next_node;
-                if (current_node.key == key) {
-                    free(next_node);
-                    *origin = current_node.next;
+        else {
+            while(current_node != NULL){
+                next_node = current_node->next;
+                if (current_node->key == key) {
                     ht->bookkeeping[hashed_key]--;
+                    *origin = next_node;
+                    free(current_node);
                 }
                 else {
-                    origin = &(current_node.next);
+                    origin = &((*origin)->next);
                 }
-                next_node = current_node.next;
+                current_node = next_node;
             }
-
         }
-        
     }
 
+    
+
+    
+    
     return 0;
 }
 
