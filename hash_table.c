@@ -3,15 +3,16 @@
 
 #include "hash_table.h"
 
-int ARRAY_MULTIPLIER = 10;
+int ARRAY_MULTIPLIER = 1;
 
 
 // Robert Jenkins' 32 bit integer hash function (adapted)
 // https://gist.github.com/badboy/6267743
 
 uint32_t hash( uint32_t a, int size) {
-
-   return a % size;
+    (void) a;
+    (void) size;
+   return 0;
 }
 
 
@@ -54,10 +55,10 @@ int put(hashtable* ht, keyType key, valType value) {
     uint32_t hashed_key = hash(key, ht->size);
 
     if (ht->bookkeeping[hashed_key] == 0) {
-        ht->array->key = key;
-        ht->array->value = value;
-        ht->array->next = NULL;
-        ht->bookkeeping[hashed_key] == 1;
+        ht->array[hashed_key].key = key;
+        ht->array[hashed_key].value = value;
+        ht->array[hashed_key].next = NULL;
+        ht->bookkeeping[hashed_key] = 1;
     }
     else {
         node* new_node = malloc(sizeof(node));
@@ -66,13 +67,13 @@ int put(hashtable* ht, keyType key, valType value) {
             return -1;
         }
 
-        new_node->key = ht->array->key;
-        new_node->value = ht->array->value;
-        new_node->next = ht->array->next;
+        new_node->key = ht->array[hashed_key].key;
+        new_node->value = ht->array[hashed_key].value;
+        new_node->next = ht->array[hashed_key].next;
 
-        ht->array->key = key;
-        ht->array->value = value;
-        ht->array->next = new_node;
+        ht->array[hashed_key].key = key;
+        ht->array[hashed_key].value = value;
+        ht->array[hashed_key].next = new_node;
         ht->bookkeeping[hashed_key]++;
     }
     return 0;
@@ -100,7 +101,7 @@ int get(hashtable* ht, keyType key, valType *values, int num_values, int* num_re
         node current_node = ht->array[hashed_key];
         if (key == current_node.key) {
             if (key_matches < num_values){
-                values[key_matches] = current_node.key;
+                values[key_matches] = current_node.value;
             }
             key_matches++;
         }
@@ -110,7 +111,7 @@ int get(hashtable* ht, keyType key, valType *values, int num_values, int* num_re
             current_node = *(current_node.next);
             if (key == current_node.key) {
                 if (key_matches < num_values){
-                    values[key_matches] = current_node.key;
+                    values[key_matches] = current_node.value;
                 }
                 key_matches++;
             }
@@ -133,49 +134,47 @@ int erase(hashtable* ht, keyType key) {
     uint32_t hashed_key = hash(key, ht->size);
 
     if (ht->bookkeeping[hashed_key] == 1){
-        node current_node = ht->array[hashed_key];
-        if (current_node.key == key) {
+        if (ht->array[hashed_key].key == key) {
+            ht->array[hashed_key].next = NULL;
             ht->bookkeeping[hashed_key]--;
         }
     } else if (ht->bookkeeping[hashed_key] > 1){
-        node current_node = ht->array[hashed_key];
-        if (current_node.key == key) {
-            ht->array[hashed_key].key = (*current_node.next).key;
-            ht->array[hashed_key].value = (*current_node.next).value;
-            ht->array[hashed_key].next = (*current_node.next).next;
-            free(current_node.next);
-            current_node = ht->array[hashed_key];
-            ht->bookkeeping[hashed_key]--;
-        }
-        while(current_node.next != NULL) {
-            current_node = *current_node.next;
-            if (current_node.key == key) {
-                *origin = next_node;
-                free(current_node);
+        while (ht->array[hashed_key].key == key) {
+            if (ht->array[hashed_key].next != NULL) {
+                node* next_node = ht->array[hashed_key].next;
+                ht->array[hashed_key].key = (*next_node).key;
+                ht->array[hashed_key].value = (*next_node).value;
+                ht->array[hashed_key].next = (*next_node).next;
+                free(next_node);
+                ht->bookkeeping[hashed_key]--;
+            }
+            else {
+                ht->array[hashed_key].next = NULL;
+                ht->bookkeeping[hashed_key] = 0;
             }
         }
-            
-    
+        if (ht->bookkeeping[hashed_key] > 1) {
 
+            node current_node = ht->array[hashed_key];
+            node** origin = &(ht->array[hashed_key].next);
+            node* next_node = current_node.next;
+            while(next_node != NULL) {
+                current_node = *next_node;
+                if (current_node.key == key) {
+                    free(next_node);
+                    *origin = current_node.next;
+                    ht->bookkeeping[hashed_key]--;
+                }
+                else {
+                    origin = &(current_node.next);
+                }
+                next_node = current_node.next;
+            }
+
+        }
+        
     }
 
-
-
-    node** origin = &(ht->array[hashed_key]);
-    node* current_node = ht->array[hashed_key];
-    node* next_node;
-
-    while(current_node != NULL){
-        next_node = current_node->next;
-        if (current_node->key == key) {
-            *origin = next_node;
-            free(current_node);
-        }
-        else {
-            origin = &((*origin)->next);
-        }
-        current_node = next_node;
-    }
     return 0;
 }
 
@@ -190,12 +189,17 @@ int deallocate(hashtable* ht) {
     node* next_node;
 
     for (int i = 0; i < ht->size; ++i){
-        current_node = ht->array[i];
-        while (current_node != NULL){
-            next_node = current_node->next;
-            free(current_node);
-            current_node = next_node;
+        if (ht->bookkeeping[i] > 1) {
+            current_node = ht->array[i].next;
+            while (current_node != NULL){
+                next_node = current_node->next;
+                free(current_node);
+                current_node = next_node;
+            }
         }
     }
+    free(ht->array);
+    free(ht->bookkeeping);
+    free(ht);
     return 0;
 }

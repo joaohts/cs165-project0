@@ -14,10 +14,10 @@ int main(void) {
   int key = 0;
   int value = -1;
 
-  int key2 = 0;
+  int key2 = 1;
   int value2 = 1;
 
-  int key3 = 0;
+  int key3 = 2;
   int value3 = 2;
 
   put(ht, key, value);
@@ -42,9 +42,35 @@ int main(void) {
   for (int i = 0; i < (*num_results); i++) {
     printf("value of %d is %d \n", i, values[i]);
   }
-  free(values);
+  
 
   erase(ht, 0);
+
+  get(ht, key, values, num_values, num_results);
+
+  if ((*num_results) > num_values) {
+    values = realloc(values, (*num_results) * sizeof(valType));
+    num_values = (*num_results);
+    get(ht, 0, values, num_values, num_results);
+  }
+
+  for (int i = 0; i < (*num_results); i++) {
+    printf("value of %d is %d \n", i, values[i]);
+  }
+
+   get(ht, key2, values, num_values, num_results);
+
+  for (int i = 0; i < (*num_results); i++) {
+    printf("value of %d is %d \n", i, values[i]);
+  }
+
+   get(ht, key3, values, num_values, num_results);
+
+  for (int i = 0; i < (*num_results); i++) {
+    printf("value of %d is %d \n", i, values[i]);
+  }
+
+  free(values);
 
   deallocate(ht);
   return 0;

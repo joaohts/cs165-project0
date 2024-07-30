@@ -1,5 +1,5 @@
 CC=gcc -std=c99
-CFLAGS = -ggdb3 -W -Wall -Wextra -Werror -O3
+CFLAGS = -ggdb3 -g -W -Wall -Wextra -Werror -O3
 LDFLAGS =
 LIBS =
 
